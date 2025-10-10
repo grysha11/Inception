@@ -8,17 +8,55 @@ services:
     expose:
       - "3306"
     volumes:
-      - /home/grisha/42Proj/Inception/data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    restart: unless-stopped
+  wordpress:
+    env_file:
+      - .env
+    depends_on:
+      - mariadb
+    volumes:
+      - wordpress_data:/var/www/html
+    container_name: wordpress
+    image: wordpress
+    build: ./requirements/wordpress
+    expose:
+      - "9000"
+    networks:
+      - inception
+    restart: unless-stopped
+  nginx:
+    env_file:
+      - .env
+    depends_on:
+      - wordpress
+    container_name: nginx
+    image: nginx
+    build: ./requirements/nginx
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/html
     networks:
       - inception
     restart: unless-stopped
 
-# volumes:
-#   mariadb:
-#     driver_opts:
-#       type: 'none'
-#       o: bind
-#       device: /home/grisha/42Proj/Inception/data
+
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: bind
+      device: ../data/db
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: bind
+      device: ../data/wp
 
 networks:
   inception:
