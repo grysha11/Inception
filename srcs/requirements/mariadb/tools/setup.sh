@@ -28,4 +28,3 @@ FLUSH PRIVILEGES;
 EOF
 
 echo "MariaDB setup complete. Keeping process in foreground."
-wait
