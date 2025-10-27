@@ -50,13 +50,13 @@ volumes:
     driver_opts:
       type: 'none'
       o: bind
-      device: /home/hzakharc/data/db
+      device: ../data/db
   wordpress_data:
     driver: local
     driver_opts:
       type: 'none'
       o: bind
-      device: /home/hzakharc/data/wp
+      device: ../data/wp
 
 networks:
   inception:

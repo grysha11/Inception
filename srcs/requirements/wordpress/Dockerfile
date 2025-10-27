@@ -1,7 +1,7 @@
 FROM debian:bookworm
 
 RUN apt-get update && \
-    apt-get install -y php php-fpm php-mysql wget
+    apt-get install -y php php-fpm php-mysql wget default-mysql-client
 
 RUN sed -i 's|listen = /run/php/php.*-fpm.sock|listen = 9000|' /etc/php/*/fpm/pool.d/www.conf
 
@@ -14,6 +14,6 @@ RUN chmod +x /usr/local/bin/setup.sh
 
 WORKDIR /var/www/html
 
-ENTRYPOINT [ "setup.sh" ]
+ENTRYPOINT ["/usr/local/bin/setup.sh"]
 
 CMD [ "/usr/sbin/php-fpm8.2", "-F" ]
