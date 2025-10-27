@@ -11,7 +11,7 @@ RUN openssl req -x509 -nodes -days 365 \
     -keyout /etc/nginx/ssl/nginx.key \
     -out /etc/nginx/ssl/nginx.crt
 
-COPY ./config/default /etc/nginx/sites-available/default
+COPY ./config/default /etc/nginx/conf.d/default.conf
 
 COPY ./tools/setup.sh /usr/local/bin/setup.sh
 RUN chmod +x /usr/local/bin/setup.sh

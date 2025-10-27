@@ -1,40 +1,30 @@
 #!/bin/bash
 set -e
 
-# wait for mariadb tcp port to be reachable
-wait_for_db() {
-  echo "Waiting for mariadb on mariadb:3306..."
-  for i in {1..30}; do
-    if bash -c ">/dev/tcp/mariadb/3306" 2>/dev/null; then
-      echo "mariadb reachable"
-      return 0
-    fi
+echo "Waiting for MariaDB to become available..."
+until nc -z mariadb 3306; do
+    echo "MariaDB is unavailable - sleeping"
     sleep 2
-  done
-  echo "Timed out waiting for mariadb"
-  return 1
-}
+done
+echo "MariaDB is up and running. Proceeding with WordPress setup."
 
-wait_for_db
-
-# If wp-config.php missing, try to set up WP
+# Check if wp-config.php exists (meaning installation has run once)
 if [ ! -f "wp-config.php" ]; then
-    # If directory is empty -> download core. If files exist, skip download to avoid "already present" error.
-    if [ -z "$(ls -A .)" ]; then
-        echo "Directory empty — downloading WordPress core..."
-        wp core download --allow-root
-    else
-        echo "Directory not empty — skipping wp core download"
-    fi
+    wp core download --allow-root
 
-    echo "Creating wp-config.php..."
-    wp config create --allow-root \
-        --dbname=${MYSQL_DATABASE} \
-        --dbuser=${MYSQL_USER} \
-        --dbpass=${MYSQL_PASSWORD} \
-        --dbhost=mariadb:3306
+    # **NEW METHOD: Create config file by modifying the sample**
+    mv wp-config-sample.php wp-config.php
 
-    echo "Installing WordPress..."
+    # Replace placeholders with environment variables using sed
+    sed -i "s/database_name_here/$MYSQL_DATABASE/g" wp-config.php
+    sed -i "s/username_here/$MYSQL_USER/g" wp-config.php
+    sed -i "s/password_here/$MYSQL_PASSWORD/g" wp-config.php
+    sed -i "s/localhost/mariadb/g" wp-config.php
+
+    # Generate unique salts for security
+    wp config shuffle-salts --allow-root
+
+    # Run the core installation
     wp core install --allow-root \
         --url=${DOMAIN_NAME} \
         --title="Inception Project" \
@@ -42,6 +32,7 @@ if [ ! -f "wp-config.php" ]; then
         --admin_password=${WP_ADMIN_PASSWORD} \
         --admin_email="user@example.com"
 
+    # Create the second user
     wp user create --allow-root \
         ${WP_SECOND_USER} \
         user2@example.com \
@@ -49,5 +40,5 @@ if [ ! -f "wp-config.php" ]; then
         --user_pass=${WP_SECOND_USER_PASSWORD}
 fi
 
+# Finally, execute the CMD (php-fpm) to keep the container running
 exec "$@"
-# ...existing code...
