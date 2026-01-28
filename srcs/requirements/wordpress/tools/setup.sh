@@ -8,23 +8,19 @@ until nc -z mariadb 3306; do
 done
 echo "MariaDB is up and running. Proceeding with WordPress setup."
 
-# Check if wp-config.php exists (meaning installation has run once)
 if [ ! -f "wp-config.php" ]; then
-    wp core download --allow-root
+    if [ ! -f "index.php" ]; then
+        wp core download --allow-root
+    fi
 
-    # **NEW METHOD: Create config file by modifying the sample**
-    mv wp-config-sample.php wp-config.php
+    wp config create --allow-root \
+        --dbname=$MYSQL_DATABASE \
+        --dbuser=$MYSQL_USER \
+        --dbpass=$MYSQL_PASSWORD \
+        --dbhost=mariadb:3306
 
-    # Replace placeholders with environment variables using sed
-    sed -i "s/database_name_here/$MYSQL_DATABASE/g" wp-config.php
-    sed -i "s/username_here/$MYSQL_USER/g" wp-config.php
-    sed -i "s/password_here/$MYSQL_PASSWORD/g" wp-config.php
-    sed -i "s/localhost/mariadb/g" wp-config.php
-
-    # Generate unique salts for security
     wp config shuffle-salts --allow-root
 
-    # Run the core installation
     wp core install --allow-root \
         --url=${DOMAIN_NAME} \
         --title="Inception Project" \
@@ -32,7 +28,6 @@ if [ ! -f "wp-config.php" ]; then
         --admin_password=${WP_ADMIN_PASSWORD} \
         --admin_email="user@example.com"
 
-    # Create the second user
     wp user create --allow-root \
         ${WP_SECOND_USER} \
         user2@example.com \
@@ -40,5 +35,4 @@ if [ ! -f "wp-config.php" ]; then
         --user_pass=${WP_SECOND_USER_PASSWORD}
 fi
 
-# Finally, execute the CMD (php-fpm) to keep the container running
 exec "$@"
